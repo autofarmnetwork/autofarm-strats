@@ -9,8 +9,8 @@ fs_permissions = [
   { access = "read", path = "./uniswap-v2-build/"},
   { access = "read", path = "./out/"}
 ]
-# optimizer = true
-# optimizer_runs = 10_000
+optimizer = true
+optimizer_runs = 10_000
 
 
 [fmt]
