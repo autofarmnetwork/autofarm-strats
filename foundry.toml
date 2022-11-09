@@ -2,5 +2,25 @@
 src = 'src'
 out = 'out'
 libs = ['lib']
+solc_version = '0.8.13'
+fs_permissions = [
+  { access = "read", path = "./vaults-config/"},
+  { access = "read", path = "./config/"},
+  { access = "read", path = "./uniswap-v2-build/"},
+  { access = "read", path = "./out/"}
+]
+# optimizer = true
+# optimizer_runs = 10_000
 
-# See more config options https://github.com/foundry-rs/foundry/tree/master/config
+
+[fmt]
+line_length = 80
+tab_width = 2
+
+[rpc_endpoints]
+bsc = "${BSC_RPC_URL}"
+evmos ="${EVMOS_RPC_URL}"
+
+[etherscan]
+bsc = { key = "${BSC_ETHERSCAN_KEY}", chain = 56, url = "https://api.bscscan.com/api" }
+
