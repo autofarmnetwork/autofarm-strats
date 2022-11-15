@@ -1,0 +1,29 @@
+{
+  "name": "autofarm-strats",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "lib": "lib",
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fmnxl/autofarm-strats.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/fmnxl/autofarm-strats/issues"
+  },
+  "homepage": "https://github.com/fmnxl/autofarm-strats#readme",
+  "dependencies": {
+    "autofarm-sdk": "^2.0.1",
+    "commander": "^9.4.1",
+    "ethers": "^5.7.2",
+    "nodemon": "^2.0.20"
+  }
+}
