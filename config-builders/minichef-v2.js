@@ -1,6 +1,23 @@
 const { program } = require('commander')
 const { ethers } = require('ethers')
 const { chainConfigs } = require('autofarm-sdk')
+const fs = require('fs')
+
+/*
+ * CLI DOCUMENTATION
+ * Use with `node ./config-builders/minichef-v2.js -c 56 pcs 0x.. 0x.. 0x..
+ */
+program
+  .description('Generates a MinichefV2 StratX4 config')
+  .option('-c, --chain-id <number>', 'Chain ID')
+  .option('-w, --write', 'Automatically write file to vaults-config')
+  .argument('<farm-name>', 'Farm name')
+  .argument('<farm-contract-address>', 'Farm contract address (MinichefV2)')
+  .argument('<pid>', 'pid of pool')
+  .argument('<reward-addresses...>', 'Reward addresses')
+  .action(main)
+
+program.parse();
 
 const IMinichefV2 = [
   'function lpToken(uint256 pid) view returns (address)',
@@ -20,18 +37,10 @@ const IERC20 = [
   'function decimals() view returns (uint256)',
 ]
 
-program
-  .description('Generates a MinichefV2 StratX4 config')
-  .option('-c, --chain-id <number>', 'Chain ID')
-  .argument('<farm-contract-address>', 'Farm contract address (MinichefV2)')
-  .argument('<pid>', 'pid of pool')
-  .argument('<reward-addresses...>', 'Reward addresses')
-  .action(main)
-program.parse();
 
-
-async function main(farmContractAddress, pid, rewardAddresses, options) {
-  const { provider, WETHAddress, multicall } = chainConfigs[options.chainId]
+async function main(farmName, farmContractAddress, pid, rewardAddresses, options) {
+  const { provider, WETHAddress, multicall, key } = chainConfigs[options.chainId]
+  const chainKey = key.toLowerCase()
   const minichef = new ethers.Contract(farmContractAddress, IMinichefV2, provider)
 
   const assetAddress = await minichef.lpToken(pid)
@@ -103,7 +112,7 @@ async function main(farmContractAddress, pid, rewardAddresses, options) {
     StratContract: "MinichefLP1.sol:StratX4MinichefLP1",
     strat: {
       asset: assetAddress,
-      pid: pid,
+      pid: parseInt(pid),
       farmContractAddress: farmContractAddress,
     },
     earnConfigs
@@ -111,6 +120,10 @@ async function main(farmContractAddress, pid, rewardAddresses, options) {
 
   const stratConfigStr = JSON.stringify(stratConfig, null, 2)
   console.log(stratConfigStr)
+  fs.writeFileSync(
+    `./vaults-config/${chainKey}/${farmName}-${token0Symbol}-${token1Symbol}.json`,
+    stratConfigStr
+  )
 
   async function getRewardLiquidity(rewardAddress, token0Address, token1Address) {
     const factory = new ethers.Contract(factoryAddress, IFactory, provider)

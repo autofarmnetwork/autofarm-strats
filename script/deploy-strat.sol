@@ -10,6 +10,8 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 import {MultiRolesAuthority} from
   "solmate/auth/authorities/MultiRolesAuthority.sol";
 import {StratX4Compounding} from "autofarm-v3-core/StratX4Compounding.sol";
+import {StratX4MinichefLP1} from "../src/MinichefLP1.sol";
+import {StratX4MasterchefLP1} from "../src/MasterchefLP1.sol";
 
 import {
   StratConfigJsonLib,
@@ -19,35 +21,28 @@ import {
 contract DeployStrat is Script, Test {
   using stdJson for string;
 
-  address public strat;
+  address public stratAddress;
+  bytes32 public salt = keccak256("autofarm-strat-v3.0.1");
 
   function run() public {
     string memory root = vm.projectRoot();
     string memory path = string.concat(root, vm.envString("STRAT_CONFIG_FILE"));
     string memory json = vm.readFile(path);
     string memory stratContract = json.readString(".StratContract");
-    bytes memory creationCode = vm.getCode(stratContract);
 
     vm.startBroadcast();
 
     if (keccak256(bytes(stratContract)) == keccak256("MinichefLP1.sol:StratX4MinichefLP1")) {
-      deployMinichefLP1(creationCode, json);
+      deployMinichefLP1(json);
     }
     else if (keccak256(bytes(stratContract)) == keccak256("MasterchefLP1.sol:StratX4MasterchefLP1")) {
-      deployMasterchefLP1(creationCode, json);
+      deployMasterchefLP1(json);
     }
 
     vm.stopBroadcast();
   }
 
-  function deploy(bytes memory creationCode, bytes memory args) internal returns (address deployed) {
-    bytes memory bytecode = abi.encodePacked(creationCode, args);
-    assembly {
-      deployed := create(0, add(bytecode, 0x20), mload(bytecode))
-    }
-  }
-
-  function deployMinichefLP1(bytes memory creationCode, string memory json) internal {
+  function deployMinichefLP1(string memory json) internal {
     (
       address asset,
       address farmContractAddress,
@@ -59,7 +54,7 @@ contract DeployStrat is Script, Test {
     console2.log("farmContractAddress", farmContractAddress);
     console2.log("pid", pid);
 
-    bytes memory args = abi.encode(
+    StratX4Compounding strat = new StratX4MinichefLP1{salt: salt}(
       asset,
       vm.envAddress("FEES_CONTROLLER_ADDRESS"),
       MultiRolesAuthority(vm.envAddress("AUTHORITY_ADDRESS")),
@@ -69,17 +64,18 @@ contract DeployStrat is Script, Test {
       earnConfigs[0].swapRoute,
       earnConfigs[0].zapLiquidityConfig
     );
-    strat = deploy(creationCode, args);
+    stratAddress = address(strat);
+    console2.log("Deployed strat", stratAddress);
 
     for (uint256 i = 1; i < earnConfigs.length; i++) {
-      StratX4Compounding(strat).addEarnConfig(
+      StratX4Compounding(stratAddress).addEarnConfig(
         earnConfigs[i].rewardToken,
         abi.encode(earnConfigs[i].swapRoute, earnConfigs[i].zapLiquidityConfig)
       );
     }
   }
 
-  function deployMasterchefLP1(bytes memory creationCode, string memory json) internal {
+  function deployMasterchefLP1(string memory json) internal {
     (
       address asset,
       address farmContractAddress,
@@ -91,7 +87,7 @@ contract DeployStrat is Script, Test {
     console2.log("farmContractAddress", farmContractAddress);
     console2.log("pid", pid);
 
-    bytes memory args = abi.encode(
+    StratX4Compounding strat = new StratX4MasterchefLP1{salt: salt}(
       asset,
       vm.envAddress("FEES_CONTROLLER_ADDRESS"),
       MultiRolesAuthority(vm.envAddress("AUTHORITY_ADDRESS")),
@@ -101,10 +97,11 @@ contract DeployStrat is Script, Test {
       earnConfigs[0].swapRoute,
       earnConfigs[0].zapLiquidityConfig
     );
-    strat = deploy(creationCode, args);
+    stratAddress = address(strat);
+    console2.log("Deployed strat", stratAddress);
 
     for (uint256 i = 1; i < earnConfigs.length; i++) {
-      StratX4Compounding(strat).addEarnConfig(
+      StratX4Compounding(stratAddress).addEarnConfig(
         earnConfigs[i].rewardToken,
         abi.encode(earnConfigs[i].swapRoute, earnConfigs[i].zapLiquidityConfig)
       );

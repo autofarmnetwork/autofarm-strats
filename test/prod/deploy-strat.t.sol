@@ -15,63 +15,18 @@ import {
   StratConfigJsonLib,
   EarnConfig
 } from "../../src/json-parsers/StratConfigJsonLib.sol";
+import {AutoSwapV5} from "autofarm-v3-core/Autoswap.sol";
+import {DeployStrat} from "../../script/deploy-strat.sol";
 
-string constant STRAT_CONFIG_FILE = "/vaults-config/evmos/diffusion-WEVMOS-ceUSDC.json";
-
-contract TestStrat is Test {
+contract TestStratDeployment is Test, DeployStrat {
   using stdJson for string;
 
   StratX4Compounding public strat;
 
   function setUp() public {
     vm.createSelectFork(vm.rpcUrl("evmos"));
-    deployStrat();
-  }
-
-  function deploy(bytes memory creationCode, bytes memory args) internal returns (address deployed) {
-    bytes memory bytecode = abi.encodePacked(creationCode, args);
-    assembly {
-      deployed := create(0, add(bytecode, 0x20), mload(bytecode))
-    }
-  }
-
-  function deployStrat() internal {
-    string memory root = vm.projectRoot();
-    string memory path = string.concat(root, STRAT_CONFIG_FILE);
-    string memory json = vm.readFile(path);
-    string memory stratContract = json.readString(".StratContract");
-    bytes memory creationCode = vm.getCode(stratContract);
-    (
-      address asset,
-      address farmContractAddress,
-      uint256 pid,
-      EarnConfig[] memory earnConfigs
-    ) = StratConfigJsonLib.parse(vm, json);
-
-    console2.log("asset", asset);
-    console2.log("farmContractAddress", farmContractAddress);
-    console2.log("pid", pid);
-
-    bytes memory args = abi.encode(
-      asset,
-      vm.envAddress("FEES_CONTROLLER_ADDRESS"),
-      MultiRolesAuthority(vm.envAddress("AUTHORITY_ADDRESS")),
-      farmContractAddress,
-      pid,
-      earnConfigs[0].rewardToken,
-      earnConfigs[0].swapRoute,
-      earnConfigs[0].zapLiquidityConfig
-    );
-    vm.startPrank(vm.envAddress("KEEPER_CALLER_ADDRESS"));
-    strat = StratX4Compounding(deploy(creationCode, args));
-
-    for (uint256 i = 1; i < earnConfigs.length; i++) {
-      StratX4Compounding(strat).addEarnConfig(
-        earnConfigs[i].rewardToken,
-        abi.encode(earnConfigs[i].swapRoute, earnConfigs[i].zapLiquidityConfig)
-      );
-    }
-    vm.stopPrank();
+    run();
+    strat = StratX4Compounding(stratAddress);
   }
 
   function testDepositAndWithdraw(uint96 amountIn, uint96 amountOut) public {
@@ -106,7 +61,8 @@ contract TestStrat is Test {
     assertApproxEqRel(balance, amountOut, 0.1e18, "final balance wonky");
   }
 
-  function testEarn() public {
+  // TODO: test all reward tokens instead of only main
+  function testCompound() public {
     deal(address(strat.mainRewardToken()), address(strat), 1 ether);
 
     console2.log('feeRate', strat.feeRate());
@@ -118,39 +74,20 @@ contract TestStrat is Test {
     assertGt(compoundedAssets, 0, "earn harvests less than expected harvest");
   }
 
-  function testHarvestAndEarn() public {
+  // TODO: test all reward tokens instead of only main
+  function testEarn() public {
     uint256 amountIn = 1e18;
     deal(address(strat.asset()), address(this), amountIn);
     strat.asset().approve(address(strat), type(uint256).max);
     strat.deposit(amountIn, address(this));
-    vm.roll(block.number + 5000);
+    assertGt(strat.totalAssets(), 0, "Deposit did not increase totalAssets");
+    vm.roll(block.number + 1000);
+    vm.warp(block.timestamp + 1000);
 
     address rewardToken = strat.mainRewardToken();
     vm.prank(vm.envAddress("KEEPER_ADDRESS"));
-    (uint256 compoundedAssets,,) = strat.earn(rewardToken, 1);
+    (uint256 compoundedAssets,uint256 earnedAmount,) = strat.earn(rewardToken, 1);
+    assertGt(earnedAmount, 0, "Nothing earned");
     assertGt(compoundedAssets, 0, "earn harvests less than expected harvest");
   }
-
-  /*
-  function testLeverage() public {
-    uint256 amountIn = 1e18;
-
-    deal(address(strat.asset()), address(this), amountIn);
-    strat.asset().approve(address(strat), type(uint256).max);
-    uint256 initialBalance = strat.asset().balanceOf(address(this));
-
-    strat.deposit(amountIn, address(this));
-
-    uint256 shares = ERC20(address(strat)).balanceOf(address(this));
-    uint256 balance = strat.asset().balanceOf(address(this));
-    strat.leverage();
-    strat.leverage();
-    vm.roll(block.number + 1000);
-  }
-
-  function testGetRate() public {
-    uint256 borrowRate = strat.getBorrowRateAtLeverageDepth(0.9e18, 2);
-    emit log_named_decimal_uint("borrowRate", borrowRate, 18);
-  }
-  */
 }

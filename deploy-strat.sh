@@ -19,6 +19,12 @@ while [[ $# -gt 0 ]]; do
       shift # past argument
       shift # past value
       ;;
+    -d|--deploy)
+      EXTRA_ARGS+=("--broadcast") # save positional arg
+      EXTRA_ARGS+=("--slow") # save positional arg
+      shift;
+      shift;
+      ;;
     -*|--*)
       EXTRA_ARGS+=("$1") # save positional arg
       EXTRA_ARGS+=("$2") # save positional arg
