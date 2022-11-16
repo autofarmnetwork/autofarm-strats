@@ -11,6 +11,13 @@ jobs:
   check:
     strategy:
       fail-fast: true
+    env:
+      BSC_RPC_URL: https://bsc-dataseed.binance.org
+      EVMOS_RPC_URL: https://evmos-mainnet.public.blastapi.io
+      KEEPER_CALLER_ADDRESS: 0x9222AE32f5eEEC408DD413f081D91A4105f3b138
+      AUTHORITY_ADDRESS: 0x89E3E7b8EF087A1DE0D57d52c9249c60780FAD8d
+      FEES_CONTROLLER_ADDRESS: 0xcD99513ed76143c5E87BCf91BAff8313d94856F5
+      KEEPER_ADDRESS: 0x1F61D2c8216791D8b946e5338452115FA062F749
 
     name: Foundry project
     runs-on: ubuntu-latest
