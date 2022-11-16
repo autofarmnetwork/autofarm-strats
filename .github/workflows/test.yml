@@ -1,6 +1,8 @@
 name: test
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+  pull_request:
 
 env:
   FOUNDRY_PROFILE: ci
@@ -28,7 +30,17 @@ jobs:
           forge build --sizes
         id: build
 
-      - name: Run Forge tests
+      - name: Get changed files in the vaults-config folder
+        id: changed-files-specific
+        uses: tj-actions/changed-files@v34
+        with:
+          files: |
+            vaults-config/**
+
+      - name: Test deployment of new strats
+        if: steps.changed-files-specific.outputs.any_changed == 'true'
         run: |
-          forge test -vvv
-        id: test
+          for vault_config in "${{ steps.changed-files-specific.outputs.all_changed_files }}"; do
+            STRAT_CONFIG_FILE=$vault_config forge test --match-path test/prod/deploy-strat.t.sol
+          done
+

@@ -25,7 +25,9 @@ contract TestStratDeployment is Test, DeployStrat {
 
   function setUp() public {
     vm.createSelectFork(vm.rpcUrl("evmos"));
-    run();
+    vm.startPrank(vm.envAddress("KEEPER_CALLER_ADDRESS"));
+    deployStrat();
+    vm.stopPrank();
     strat = StratX4Compounding(stratAddress);
   }
 

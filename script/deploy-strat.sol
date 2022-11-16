@@ -25,12 +25,16 @@ contract DeployStrat is Script, Test {
   bytes32 public salt = keccak256("autofarm-strat-v3.0.1");
 
   function run() public {
+    vm.startBroadcast();
+    deployStrat();
+    vm.stopBroadcast();
+  }
+
+  function deployStrat() public {
     string memory root = vm.projectRoot();
-    string memory path = string.concat(root, vm.envString("STRAT_CONFIG_FILE"));
+    string memory path = string.concat(root, "/", vm.envString("STRAT_CONFIG_FILE"));
     string memory json = vm.readFile(path);
     string memory stratContract = json.readString(".StratContract");
-
-    vm.startBroadcast();
 
     if (keccak256(bytes(stratContract)) == keccak256("MinichefLP1.sol:StratX4MinichefLP1")) {
       deployMinichefLP1(json);
@@ -38,8 +42,6 @@ contract DeployStrat is Script, Test {
     else if (keccak256(bytes(stratContract)) == keccak256("MasterchefLP1.sol:StratX4MasterchefLP1")) {
       deployMasterchefLP1(json);
     }
-
-    vm.stopBroadcast();
   }
 
   function deployMinichefLP1(string memory json) internal {
