@@ -7,6 +7,7 @@
   },
   "earnConfigs": [
     {
+      "rewardToken": "0x3f75ceabCDfed1aCa03257Dc6Bdc0408E2b4b026",
       "swapRoute": {
         "feeFactors": [9970],
         "pairsPath": ["0x932c2d21fa11a545554301e5e6fb48c3accdff4d"],
@@ -16,8 +17,7 @@
         "feeFactor": 9970,
         "lpSubtokenIn": "0xD4949664cD82660AaE99bEdc034a0deA8A0bd517",
         "lpSubtokenOut": "0xe46910336479F254723710D57e7b683F3315b22B"
-      },
-      "rewardToken": "0x3f75ceabCDfed1aCa03257Dc6Bdc0408E2b4b026"
+      }
     },
     {
       "rewardToken": "0xD4949664cD82660AaE99bEdc034a0deA8A0bd517",
